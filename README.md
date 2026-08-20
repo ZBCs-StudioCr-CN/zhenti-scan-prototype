@@ -11,6 +11,8 @@
 ![ocr](https://img.shields.io/badge/OCR-Tesseract.js-ff6f00?style=flat-square)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)
 
+🌐 **[在线预览 Live Demo](https://zbcs-studiocr-cn.github.io/zhenti-scan-prototype/)** — 点击立即体验
+
 ---
 
 ## ✨ 核心亮点
