@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1700" viewBox="0 0 1200 1700">
+  <defs>
+    <linearGradient id="paper3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fcfcf7"/>
+      <stop offset="1" stop-color="#f4efde"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1700" fill="url(#paper3)"/>
+  <rect x="0" y="0" width="1200" height="20" fill="rgba(0,0,0,.12)"/>
+
+  <text x="80" y="60" font-family="'SimSun','宋体',serif" font-size="18" fill="#333">2024 新高考 II 卷 · 数学  第 1 页（共 6 页）  · 学生实拍扫描版</text>
+  <line x1="80" y1="80" x2="1120" y2="80" stroke="#666" stroke-width="1"/>
+
+  <text x="600" y="130" text-anchor="middle" font-family="'SimHei','黑体',sans-serif" font-size="32" font-weight="700" fill="#1a1a1a">2024 年普通高等学校招生全国统一考试</text>
+  <text x="600" y="170" text-anchor="middle" font-family="'SimHei','黑体',sans-serif" font-size="28" font-weight="700" fill="#1a1a1a">新高考 II 卷 · 数学（学生手写版）</text>
+  <line x1="100" y1="195" x2="1100" y2="195" stroke="#333" stroke-width="1.2"/>
+
+  <g font-family="'SimSun','宋体',serif" font-size="17" fill="#333">
+    <text x="100" y="230">姓名：<tspan font-family="cursive" fill="#c0392b" font-size="22">李小明</tspan></text>
+    <text x="400" y="230">考号：<tspan font-family="cursive" fill="#c0392b" font-size="20">20240607-0315</tspan></text>
+    <text x="800" y="230">考场：<tspan font-family="cursive" fill="#c0392b" font-size="20">高三(3)班</tspan></text>
+  </g>
+
+  <text x="80" y="285" font-family="'SimHei','黑体',sans-serif" font-size="21" font-weight="700" fill="#111">一、单项选择题（共 8 题，每题 5 分，共 40 分）</text>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="325"><tspan font-weight="700" fill="#c0392b">1.</tspan> 设集合 M = { x | −1 ≤ x &lt; 3 }，N = { x | x² − 5x + 4 &lt; 0 }，则 M ∩ N =</text>
+    <text x="110" y="357">A. [ 1 , 3 )</text><text x="360" y="357">B. ( 1 , 3 )</text><text x="610" y="357">C. [ 1 , 4 )</text><text x="860" y="357">D. ( 1 , 4 )</text>
+    <text x="1020" y="355" font-family="cursive" fill="#d62828" font-size="22" font-weight="700">✓</text>
+
+    <text x="80" y="415"><tspan font-weight="700" fill="#c0392b">2.</tspan> 复数 z = ( 2 + i ) / ( 1 − i )（i 为虚数单位）的共轭复数 z̄ =</text>
+    <text x="110" y="447">A. 1/2 + 3/2 i</text><text x="410" y="447">B. 1/2 − 3/2 i</text><text x="710" y="447">C. 3/2 + 1/2 i</text>
+    <text x="80" y="485" font-family="cursive" fill="#d62828" font-size="22">× 算错了！答案是B</text>
+
+    <text x="80" y="540"><tspan font-weight="700" fill="#c0392b">3.</tspan> 设 a = log₂ 5，b = 2⁻⁰·⁵，c = log₄ 10，则 a, b, c 的大小关系为</text>
+    <text x="110" y="572">A. a &gt; c &gt; b</text><text x="380" y="572">B. a &gt; b &gt; c</text><text x="650" y="572">C. c &gt; a &gt; b</text><text x="920" y="572">D. c &gt; b &gt; a</text>
+
+    <text x="80" y="640"><tspan font-weight="700" fill="#c0392b">4.</tspan> 已知平面向量 a, b 满足 | a | = 1，| b | = 2，a · b = 1，则 a 与 b 的夹角为</text>
+    <text x="110" y="672">A. π/6</text><text x="360" y="672">B. π/4</text><text x="610" y="672">C. π/3</text><text x="860" y="672">D. 2π/3</text>
+    <text x="80" y="705" font-family="cursive" fill="#d62828" font-size="18">cosθ=1/2 → θ=π/3 选C ✓</text>
+
+    <text x="80" y="755"><tspan font-weight="700" fill="#c0392b">5.</tspan> 函数 f ( x ) = ( 2ˣ − 1 ) / ( 2ˣ + 1 ) · cos x 在 [ −π, π ] 上的大致图象为</text>
+    <text x="110" y="787">A. 奇函数，先负后正</text><text x="440" y="787">B. 偶函数，先正后负</text><text x="770" y="787">C. 奇函数，全正</text>
+
+    <text x="80" y="855"><tspan font-weight="700" fill="#c0392b">6.</tspan> 在△ABC 中，A = 45°，a = 2，b = √2，则 B =</text>
+    <text x="110" y="887">A. 30°</text><text x="360" y="887">B. 60°</text><text x="610" y="887">C. 30° 或 150°</text><text x="880" y="887">D. 60° 或 120°</text>
+
+    <text x="80" y="955"><tspan font-weight="700" fill="#c0392b">7.</tspan> 等比数列 { aₙ } 中，a₁ = 1，a₃ a₅ = 4 a₄，则 a₇ =</text>
+    <text x="110" y="987">A. 4</text><text x="360" y="987">B. 8</text><text x="610" y="987">C. 16</text><text x="860" y="987">D. 32</text>
+
+    <text x="80" y="1055"><tspan font-weight="700" fill="#c0392b">8.</tspan> 过球 O 的球面上一点 A 作三条两两互相垂直的弦 AB, AC, AD，若</text>
+    <text x="100" y="1085">AB = AC = AD = 2√3，则球 O 的表面积为</text>
+    <text x="110" y="1117">A. 24 π</text><text x="360" y="1117">B. 36 π</text><text x="610" y="1117">C. 48 π</text><text x="860" y="1117">D. 64 π</text>
+    <text x="80" y="1155" font-family="cursive" fill="#d62828" font-size="18">补形法：长方体对角线=直径=6 → S=36π ✓</text>
+  </g>
+
+  <text x="80" y="1215" font-family="'SimHei','黑体',sans-serif" font-size="21" font-weight="700" fill="#111">二、多项选择题（共 4 题，每题 5 分，共 20 分）</text>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1255"><tspan font-weight="700" fill="#c0392b">9.</tspan> 已知函数 f ( x ) = sin ( 2x + φ ) ( 0 &lt; φ &lt; π )，则</text>
+    <text x="110" y="1287">A. 存在 φ 使 f ( x ) 为偶函数</text>
+    <text x="480" y="1287">B. 对任意 φ，f ( x ) 都非奇非偶</text>
+    <text x="80" y="1315">C. 当 φ = π/2 时，f ( x ) = cos 2x</text>
+
+    <text x="80" y="1380"><tspan font-weight="700" fill="#c0392b">10.</tspan> 设函数 f ( x ) = eˣ − a x − 1，则下列结论正确的是</text>
+    <text x="110" y="1412">A. 当 a ≤ 0 时，f ( x ) 在 R 上单调递增</text>
+    <text x="80" y="1440">B. 当 a = 1 时，f ( x ) ≥ 0 恒成立</text>
+    <text x="80" y="1468">C. 当 a &gt; 1 时，f ( x ) 有两个零点</text>
+
+    <text x="80" y="1530"><tspan font-weight="700" fill="#c0392b">11.</tspan> 已知直线 l 过点 P ( 1, 0 )，且与圆 C : ( x − 2 )² + ( y − 1 )² = 1 交于 A, B 两点，则</text>
+    <text x="110" y="1562">A. △ABC 面积最大值为 1/2</text>
+    <text x="80" y="1590">B. 弦 AB 最短时，直线 l 斜率为 1</text>
+
+    <text x="80" y="1650"><tspan font-weight="700" fill="#c0392b">12.</tspan> 设 F₁, F₂ 为双曲线 C : x² − y²/3 = 1 的左、右焦点，O 为坐标原点，则</text>
+    <text x="110" y="1682">A. 离心率 e = 2</text>
+  </g>
+</svg>

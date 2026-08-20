@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1700" viewBox="0 0 1200 1700">
+  <defs>
+    <linearGradient id="paper2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf9f2"/>
+      <stop offset="1" stop-color="#f3ede0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1700" fill="url(#paper2)"/>
+  <rect x="0" y="0" width="1200" height="24" fill="rgba(0,0,0,.1)"/>
+  <rect x="0" y="1676" width="1200" height="24" fill="rgba(0,0,0,.1)"/>
+
+  <text x="80" y="60" font-family="'SimSun','宋体',serif" font-size="18" fill="#333">2025 新高考 I 卷 · 数学  第 2 页（共 6 页）</text>
+  <line x1="80" y1="80" x2="1120" y2="80" stroke="#666" stroke-width="1"/>
+
+  <g font-family="'SimSun','宋体',serif" font-size="20" fill="#111">
+    <text x="80" y="130"><tspan font-weight="700" fill="#c0392b">15.</tspan> 已知双曲线 x²/a² − y²/b² = 1 ( a &gt; 0, b &gt; 0 ) 的渐近线方程为</text>
+    <text x="100" y="160">y = ±√3 x，且过点 ( 2, 3 )，则双曲线的离心率为 __________。</text>
+    <text x="80" y="210"><tspan font-weight="700" fill="#c0392b">16.</tspan> 设函数 f ( x ) = eˣ − a x，若 f ( x ) ≥ 1 对 ∀x ∈ R 恒成立，则实数 a 的取值</text>
+    <text x="100" y="240">范围为 __________。</text>
+    <text x="900" y="155" font-family="cursive" font-size="20" fill="#d62828">→ e=2</text>
+  </g>
+
+  <text x="80" y="300" font-family="'SimHei','黑体',sans-serif" font-size="22" font-weight="700" fill="#111">四、解答题：本题共 6 小题，共 70 分。</text>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="350"><tspan font-weight="700" fill="#c0392b">17.</tspan> （10 分）在△ABC 中，内角 A, B, C 的对边分别为 a, b, c，已知</text>
+    <text x="100" y="380">a cos C + √3 a sin C − b − c = 0。</text>
+    <text x="80" y="412">（1）求角 A 的大小；</text>
+    <text x="80" y="440">（2）若 a = √3，求△ABC 面积的最大值。</text>
+    <text x="80" y="490" font-family="cursive" font-size="17" fill="#d62828">
+      (1) 正弦定理: sinA cosC + √3 sinA sinC = sinB + sinC
+    </text>
+    <text x="80" y="515" font-family="cursive" font-size="17" fill="#d62828">
+      = sin(A+C) + sinC = sinA cosC + cosA sinC + sinC
+    </text>
+    <text x="80" y="540" font-family="cursive" font-size="17" fill="#d62828">
+      约掉 sinA cosC,  √3 sinA − cosA = 1  → 2sin(A−π/6)=1 → A=π/3 ✓
+    </text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="610"><tspan font-weight="700" fill="#c0392b">18.</tspan> （12 分）已知数列 { aₙ } 的前 n 项和为 Sₙ，且 2 Sₙ = 3 aₙ − 3。</text>
+    <text x="80" y="642">（1）求 { aₙ } 的通项公式；</text>
+    <text x="80" y="670">（2）设 bₙ = log₃ a₂ₙ₋₁，求数列 { 1/(bₙ bₙ₊₁) } 的前 n 项和 Tₙ。</text>
+    <text x="80" y="720" font-family="cursive" font-size="17" fill="#d62828">
+      aₙ=3ⁿ,  bₙ=2n-1, 裂项 Tₙ=n/(2n+1)
+    </text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="790"><tspan font-weight="700" fill="#c0392b">19.</tspan> （12 分）某学校开展"体育锻炼一小时"活动，随机抽取 100 名学生进行</text>
+    <text x="100" y="820">调查，得到男生、女生每周锻炼时长的频数分布表如下：</text>
+    <g transform="translate(120,840)" font-size="17">
+      <rect x="0" y="0" width="960" height="100" fill="none" stroke="#333" stroke-width="1"/>
+      <line x1="160" y1="0" x2="160" y2="100" stroke="#333"/>
+      <line x1="480" y1="0" x2="480" y2="100" stroke="#333"/>
+      <line x1="800" y1="0" x2="800" y2="100" stroke="#333"/>
+      <line x1="0" y1="33" x2="960" y2="33" stroke="#333"/>
+      <line x1="0" y1="66" x2="960" y2="66" stroke="#333"/>
+      <text x="80" y="23" text-anchor="middle">类别</text>
+      <text x="320" y="23" text-anchor="middle">[0,3)小时</text>
+      <text x="640" y="23" text-anchor="middle">[3,7)小时</text>
+      <text x="880" y="23" text-anchor="middle">[7,10]小时</text>
+      <text x="80" y="56" text-anchor="middle">男生</text><text x="320" y="56" text-anchor="middle">10</text><text x="640" y="56" text-anchor="middle">30</text><text x="880" y="56" text-anchor="middle">20</text>
+      <text x="80" y="89" text-anchor="middle">女生</text><text x="320" y="89" text-anchor="middle">15</text><text x="640" y="89" text-anchor="middle">18</text><text x="880" y="89" text-anchor="middle">7</text>
+    </g>
+    <text x="80" y="1000">（1）能否有 95% 的把握认为"锻炼时长是否达标（≥7 小时）与性别有关"？</text>
+    <text x="80" y="1028">（2）从锻炼时长在 [7,10] 的学生中按性别分层抽样抽取 9 人，再从中随机抽取</text>
+    <text x="100" y="1056">3 人做访谈，记 X 为抽到的男生人数，求 X 的分布列和数学期望。</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1120"><tspan font-weight="700" fill="#c0392b">20.</tspan> （12 分）如图，直四棱柱 ABCD − A₁B₁C₁D₁ 中，底面 ABCD 为菱形，</text>
+    <text x="100" y="1150">∠BAD = 60°，AB = AA₁ = 2，E 为 BB₁ 的中点。</text>
+    <text x="80" y="1182">（1）证明：平面 AEC₁ ⊥ 平面 AA₁C₁C；</text>
+    <text x="80" y="1210">（2）求二面角 E − AC₁ − D 的余弦值。</text>
+    <g transform="translate(850,1100)" stroke="#333" fill="none" stroke-width="1.2">
+      <polygon points="0,50 80,30 140,50 60,70"/>
+      <polygon points="0,50 0,0 80,-20 80,30"/>
+      <polygon points="80,30 80,-20 140,0 140,50"/>
+      <polygon points="60,70 60,20 140,0 140,50" stroke-dasharray="3 3"/>
+      <text x="-5" y="55" font-size="13" fill="#333">A</text>
+      <text x="80" y="-24" font-size="13" fill="#333">B₁</text>
+      <text x="142" y="55" font-size="13" fill="#333">C₁</text>
+      <text x="55" y="90" font-size="13" fill="#333">D</text>
+    </g>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1330"><tspan font-weight="700" fill="#c0392b">21.</tspan> （12 分）已知抛物线 C : y² = 2 p x ( p &gt; 0 ) 的焦点为 F，过 F 且斜率</text>
+    <text x="100" y="1360">为 1 的直线 l 与 C 交于 A, B 两点，| AB | = 8。</text>
+    <text x="80" y="1392">（1）求 C 的方程；</text>
+    <text x="80" y="1420">（2）设 O 为坐标原点，P 在 C 上，且满足 AP · BP = 0（向量点积），求点 P 的坐标。</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1490"><tspan font-weight="700" fill="#c0392b">22.</tspan> （12 分）已知函数 f ( x ) = ln ( 1 + x ) − x + ( a / 2 ) x²，a ∈ R。</text>
+    <text x="80" y="1522">（1）讨论 f ( x ) 的单调性；</text>
+    <text x="80" y="1550">（2）证明：当 a ≥ 1 时，f ( x ) ≥ 0 在 [ 0 , +∞ ) 上恒成立；</text>
+    <text x="80" y="1578">（3）求证：ln ( n + 1 ) &gt; Σ(k=1→n) k / ( k² + 1 )，n ∈ N*。</text>
+    <text x="80" y="1630" font-family="cursive" font-size="30" fill="#d62828">× 第三问不会做……</text>
+  </g>
+</svg>

@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1700" viewBox="0 0 1200 1700">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf9f2"/>
+      <stop offset="1" stop-color="#f5f0e0"/>
+    </linearGradient>
+    <filter id="paperTex">
+      <feTurbulence baseFrequency="0.9" numOctaves="2" seed="3"/>
+      <feColorMatrix values="0 0 0 0 0.85  0 0 0 0 0.8  0 0 0 0 0.65  0 0 0 0.12 0"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="1700" fill="url(#paper)"/>
+  <rect width="1200" height="1700" fill="url(#paperTex)" opacity="0.5"/>
+  <rect x="0" y="0" width="1200" height="30" fill="rgba(0,0,0,.12)"/>
+  <rect x="0" y="1670" width="1200" height="30" fill="rgba(0,0,0,.1)"/>
+  <rect x="0" y="0" width="18" height="1700" fill="rgba(0,0,0,.1)"/>
+  <rect x="1182" y="0" width="18" height="1700" fill="rgba(0,0,0,.1)"/>
+
+  <text x="600" y="90" text-anchor="middle" font-family="'SimSun','宋体',serif" font-size="34" font-weight="700" fill="#1a1a1a">2025年普通高等学校招生全国统一考试</text>
+  <text x="600" y="130" text-anchor="middle" font-family="'SimSun','宋体',serif" font-size="30" font-weight="700" fill="#1a1a1a">新高考 I 卷 · 数学</text>
+  <line x1="100" y1="155" x2="1100" y2="155" stroke="#333" stroke-width="1.5"/>
+  <text x="100" y="185" font-family="'SimSun','宋体',serif" font-size="16" fill="#333">本试卷共 6 页，22 小题，满分 150 分。考试用时 120 分钟。</text>
+  <text x="100" y="210" font-family="'SimSun','宋体',serif" font-size="16" fill="#333">注意事项：1. 答卷前，考生务必将自己的姓名、考生号、考场号和座位号填写在答题卡上。</text>
+  <text x="100" y="232" font-family="'SimSun','宋体',serif" font-size="16" fill="#333">2. 作答选择题时，选出每小题答案后，用 2B 铅笔把答题卡上对应题目选项的答案信息点涂黑。</text>
+  <line x1="80" y1="255" x2="1120" y2="255" stroke="#666" stroke-width="1" stroke-dasharray="4 4"/>
+
+  <text x="80" y="295" font-family="'SimHei','黑体',sans-serif" font-size="22" font-weight="700" fill="#111">一、单项选择题：本题共 8 小题，每小题 5 分，共 40 分。</text>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="340"><tspan font-weight="700" fill="#c0392b">1.</tspan> 已知集合 A = { x | x² − 3x − 10 ≤ 0 }，B = { x | 2x − 3 &gt; 0 }，则 A ∩ B =</text>
+    <text x="110" y="372">A. ( 3/2 , 5 ]</text>
+    <text x="380" y="372">B. [ 3/2 , 5 )</text>
+    <text x="650" y="372">C. ( −2 , 3/2 )</text>
+    <text x="920" y="372">D. [ −2 , 3/2 ]</text>
+    <circle cx="108" cy="367" r="18" fill="none" stroke="#d62828" stroke-width="2.5"/>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="440"><tspan font-weight="700" fill="#c0392b">2.</tspan> 已知复数 z 满足 ( 1 + i ) z = 2 − 4i（i 为虚数单位），则 | z | =</text>
+    <text x="110" y="472">A. √5</text>
+    <text x="380" y="472">B. √10</text>
+    <text x="650" y="472">C. 2√5</text>
+    <text x="920" y="472">D. 5</text>
+    <text x="390" y="454" font-family="cursive" font-size="24" fill="#d62828" font-weight="700">×</text>
+    <text x="120" y="454" font-family="cursive" font-size="20" fill="#d62828">选B</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="540"><tspan font-weight="700" fill="#c0392b">3.</tspan> 已知向量 a = ( 1 , 2 )，b = ( m , −1 )，若 a ⊥ ( a + b )，则实数 m =</text>
+    <text x="110" y="572">A. −7</text>
+    <text x="380" y="572">B. −3</text>
+    <text x="650" y="572">C. 3</text>
+    <text x="920" y="572">D. 7</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="640"><tspan font-weight="700" fill="#c0392b">4.</tspan> 若 sin α = 3/5，α ∈ ( π/2 , π )，则 cos ( α + π/6 ) 的值为</text>
+    <text x="110" y="672">A. ( 4√3 − 3 ) / 10</text>
+    <text x="440" y="672">B. ( 4√3 + 3 ) / 10</text>
+    <text x="770" y="672">C. ( −4√3 − 3 ) / 10</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="740"><tspan font-weight="700" fill="#c0392b">5.</tspan> 等差数列 { aₙ } 的前 n 项和为 Sₙ，若 a₃ = 7，S₆ = 48，则公差 d =</text>
+    <text x="110" y="772">A. 1</text>
+    <text x="380" y="772">B. 2</text>
+    <text x="650" y="772">C. 3</text>
+    <text x="920" y="772">D. 4</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="840"><tspan font-weight="700" fill="#c0392b">6.</tspan> 函数 f ( x ) = ln ( x² − 2x − 3 ) 的单调递减区间为</text>
+    <text x="110" y="872">A. ( −∞ , −1 )</text>
+    <text x="400" y="872">B. ( −∞ , 1 )</text>
+    <text x="690" y="872">C. ( 1 , +∞ )</text>
+    <text x="950" y="872">D. ( 3 , +∞ )</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="940"><tspan font-weight="700" fill="#c0392b">7.</tspan> 已知正四棱锥的底面边长为 2，侧棱长为 √6，则该正四棱锥的体积为</text>
+    <text x="110" y="972">A. 4/3</text>
+    <text x="380" y="972">B. 8/3</text>
+    <text x="650" y="972">C. 4</text>
+    <text x="920" y="972">D. 16/3</text>
+    <text x="80" y="1010" font-family="cursive" font-size="16" fill="#d62828">高h=√(6-2)=2, V=1/3*4*2=8/3 ✓</text>
+  </g>
+
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1070"><tspan font-weight="700" fill="#c0392b">8.</tspan> 从 1,2,3,4,5,6 六个数中随机取 3 个不同的数，则这 3 个数能构成等差数列的概率为</text>
+    <text x="110" y="1102">A. 1/5</text>
+    <text x="380" y="1102">B. 3/10</text>
+    <text x="650" y="1102">C. 2/5</text>
+    <text x="920" y="1102">D. 1/2</text>
+  </g>
+
+  <text x="80" y="1165" font-family="'SimHei','黑体',sans-serif" font-size="22" font-weight="700" fill="#111">二、多项选择题：本题共 4 小题，每小题 5 分，共 20 分。</text>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1205"><tspan font-weight="700" fill="#c0392b">9.</tspan> 下列函数中，以 π 为最小正周期且在 ( 0 , π/2 ) 上单调递增的是</text>
+    <text x="110" y="1237">A. y = sin 2x</text>
+    <text x="400" y="1237">B. y = | cos x |</text>
+    <text x="690" y="1237">C. y = tan x</text>
+    <text x="950" y="1237">D. y = cos 2x</text>
+  </g>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1305"><tspan font-weight="700" fill="#c0392b">10.</tspan> 已知函数 f ( x ) = x³ − 3x + 1，则下列说法正确的是</text>
+    <text x="110" y="1337">A. f ( x ) 有两个极值点</text>
+    <text x="420" y="1337">B. f ( x ) 的极大值为 3</text>
+    <text x="730" y="1337">C. f ( x ) 在 (−2, 2) 上有三个零点</text>
+  </g>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1405"><tspan font-weight="700" fill="#c0392b">11.</tspan> 在△ABC 中，内角 A, B, C 的对边分别为 a, b, c，若 a = 2，A = 60°，则</text>
+    <text x="110" y="1437">A. b = 4√3 / 3 时，B 有两解</text>
+    <text x="450" y="1437">B. b = 2√3 时，B = 90°</text>
+    <text x="780" y="1437">C. △ABC 周长最大值为 6</text>
+  </g>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1505"><tspan font-weight="700" fill="#c0392b">12.</tspan> 已知椭圆 C : x²/4 + y²/3 = 1，F₁, F₂ 为左、右焦点，则</text>
+    <text x="110" y="1537">A. 离心率 e = 1/2</text>
+    <text x="420" y="1537">B. △PF₁F₂ 的周长为 6</text>
+    <text x="730" y="1537">C. 焦点到准线距离为 3</text>
+  </g>
+
+  <text x="80" y="1610" font-family="'SimHei','黑体',sans-serif" font-size="22" font-weight="700" fill="#111">三、填空题：本题共 4 小题，每小题 5 分，共 20 分。</text>
+  <g font-family="'SimSun','宋体',serif" font-size="19" fill="#111">
+    <text x="80" y="1650"><tspan font-weight="700" fill="#c0392b">13.</tspan> 曲线 y = x³ − 2x + 1 在点 ( 1, 0 ) 处的切线方程为 __________。</text>
+    <text x="80" y="1685"><tspan font-weight="700" fill="#c0392b">14.</tspan> 已知 ( 1 + 2x )⁵ 的展开式中，含 x² 项的系数为 __________。</text>
+  </g>
+</svg>
