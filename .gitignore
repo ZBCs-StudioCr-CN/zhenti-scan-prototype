@@ -43,3 +43,6 @@ Desktop.ini
 *.tmp
 *.bak
 *.old
+
+# TRAE share packages
+.trae-html-share-packages/

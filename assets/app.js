@@ -90,7 +90,7 @@ const SAMPLE_EXAMS = [
 ];
 
 /* ---------- 1. Hash路由 + 状态同步 ---------- */
-const ROUTES = ['home','search','kbank','exams','analysis','report','practice','wrongbook','my','pricing','login','teacher'];
+const ROUTES = ['home','search','kbank','exams','analysis','report','practice','wrongbook','my','pricing','login','teacher','biz'];
 function switchPage(route){
   if(!ROUTES.includes(route)) route = 'home';
   $$('.page').forEach(p => p.classList.toggle('active', p.id === 'page-'+route));
@@ -116,6 +116,7 @@ function switchPage(route){
   if(route === 'pricing') renderPricingPage();
   if(route === 'login') initLoginPage();
   if(route === 'teacher') renderTeacherPage();
+  if(route === 'biz') renderBizPage();
   if(route === 'home'){
     setTimeout(renderMiniRadar, 100);
     // 示例报告按钮
@@ -124,7 +125,7 @@ function switchPage(route){
       demoBtn._bound = true;
       demoBtn.addEventListener('click', () => {
         // 生成一份示例报告（2025 I 卷，中等偏上学生水平）
-        const examId = 'exam-2025-I';
+        const examId = '2025-I';
         const exam = EXAM_MAP[examId];
         if(!exam) return;
         State.selectedExamId = examId;
@@ -280,18 +281,115 @@ function renderSampleGrid(){
     });
   });
 }
-/* ---------- OCR 流程（真实 Tesseract.js + 模拟分题+考点匹配）---------- */
+/* ---------- AI 学生作答判分（VEHME/LLM 预留接口）----------
+   思路：题目 + 参考答案 + 学生作答图片 → LLM 判分（正确性+分步评分+错误定位）
+   需用户配置 LLM API（兼容 OpenAI 格式：DeepSeek/通义/Kimi 等）
+------------------------------------------------------------------ */
+async function gradeStudentAnswer(question, imageFile){
+  // 读取 LLM 配置
+  const llmCfg = JSON.parse(localStorage.getItem('llmConfig') || '{}');
+  if(!llmCfg.apiKey){
+    alert('请先在「AI引擎配置」中设置 LLM API Key 后再使用 AI 判分功能。');
+    return;
+  }
+  const qNum = question.num;
+  const btn = $(`.ai-grade-btn[data-num="${qNum}"]`);
+  const originText = btn?.textContent;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ AI 判分中…'; }
+
+  try {
+    // 图片转 base64
+    const base64 = await new Promise((r,f)=>{
+      const fr = new FileReader();
+      fr.onload = ()=>r(fr.result);
+      fr.onerror = f;
+      fr.readAsDataURL(imageFile);
+    });
+
+    // 构建判分 prompt（参考 VEHME 的 Error Detection + Error Localization 思路）
+    const systemPrompt = `你是一位资深高中数学阅卷老师。请根据题目、参考答案和学生手写作答图片，进行严格判分。
+输出必须是严格的 JSON 格式，不要包含 markdown 标记：
+{
+  "correct": true/false,           // 整体是否正确
+  "partial": 0-1,                  // 得分比例（1=满分，0.5=一半分，0=零分）
+  "score": 数字,                    // 实际得分
+  "totalScore": 数字,               // 满分
+  "errorSteps": ["第1步错误原因", ...],  // 错误步骤及原因（如有）
+  "reasoning": "简要判分理由"
+}`;
+    const userPrompt = `题目：${question.stem}
+参考答案：${Array.isArray(question.answer) ? question.answer.join('、') : question.answer}
+满分：${question.score} 分
+请仔细查看学生的手写作答图片，对照参考答案进行判分。注意：解答题需要按步骤给分，关键步骤正确但最终答案错可给部分分。`;
+
+    // 调用 LLM API（兼容 OpenAI 格式）
+    const baseUrl = llmCfg.baseUrl || 'https://api.deepseek.com/v1';
+    const model = llmCfg.model || 'deepseek-chat';
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${llmCfg.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages:[
+          {role:'system', content:systemPrompt},
+          {role:'user', content:[
+            {type:'text', text:userPrompt},
+            {type:'image_url', image_url:{url: base64}}
+          ]}
+        ],
+        temperature:0.1,
+        response_format:{type:'json_object'}
+      })
+    });
+    if(!res.ok) throw new Error(`API 错误 ${res.status}`);
+    const json = await res.json();
+    const content = json.choices?.[0]?.message?.content || '';
+    let result = {};
+    try { result = JSON.parse(content.replace(/```json|```/g,'').trim()); }
+    catch(e){ result = { correct:false, partial:0, score:0, reasoning:content }; }
+
+    // 更新作答状态
+    State.answers[qNum] = {
+      correct: result.correct || result.partial >= 0.5,
+      partial: result.partial ?? (result.correct ? 1 : 0),
+      submitted: true,
+      userAns: 'AI_GRADED',
+      aiResult: result
+    };
+    autosaveProgress();
+
+    // 显示判分结果
+    alert(`🤖 AI 判分结果：\n\n得分：${result.score ?? '?'} / ${question.score} 分\n${result.correct ? '✅ 回答正确' : '❌ 回答有误'}\n${result.errorSteps?.length ? '错误步骤：\n' + result.errorSteps.map((s,i)=>`${i+1}. ${s}`).join('\n') : ''}\n\n理由：${result.reasoning || ''}`);
+
+    renderQDetail(); renderQGrid(); updateProgressStats(); checkAllDone();
+  } catch(e){
+    alert(`AI 判分失败：${e.message || e}\n\n请检查 LLM API 配置是否正确，或模型是否支持图片输入。`);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = originText; }
+  }
+}
+
+/* ---------- OCR 流程（图像增强→版面分析→识别→人工确认→精标）---------- */
 async function startOCRFlow({name, label, src, examId}){
-  // 0. 打开弹窗
+  // 修正 examId：去掉 'exam-' 前缀以匹配 EXAM_MAP 的 key（data.js 中 id 为 '2025-I'）
+  examId = examId.replace(/^exam-/, '');
   const modal = $('#ocrModal'); modal.style.display = '';
   $('#ocrFileLabel').textContent = label;
   $('#ocrPreviewImg').src = src;
+  $('#ocrPreviewImg').style.display = '';
+  $('#ocrPreviewCanvas').style.display = 'none';
+  $('#ocrLayoutCanvas').style.display = 'none';
   $('#ocrProgressBar').style.width = '0%';
   $('#ocrPercent').textContent = '0%';
   $('#ocrStageText').textContent = '准备中…';
   $('#ocrEta').textContent = '预计 12 秒';
   $('#ocrLog').innerHTML = '';
+  $('#ocrConfirm').style.display = 'none';
   setOcrStage(0);
+
   const logLine = (t, type='info') => {
     const colors = { info:'#475569', ok:'#059669', warn:'#d97706', err:'#dc2626', hl:'#2563eb' };
     const now = new Date();
@@ -304,86 +402,131 @@ async function startOCRFlow({name, label, src, examId}){
     $('#ocrLog').scrollTop = $('#ocrLog').scrollHeight;
   };
 
-  // 阶段1：加载图像
-  setOcrStage(1);
-  $('#ocrStageText').textContent = '阶段 1/5 · 加载图像…';
-  logLine(`📥 加载试卷图像：${name}`, 'hl');
-  await sleep(700);
-  updateProg(8, 11);
-  logLine('✅ 图像加载成功：1200×1700，色彩空间 sRGB', 'ok');
+  // 读取预处理选项
+  const getPpOpts = () => ({
+    gray: $('#ppGray').checked,
+    denoise: $('#ppDenoise').checked,
+    binarize: $('#ppBinarize').checked,
+    deskew: $('#ppDeskew').checked,
+  });
 
-  // 阶段2：OCR 引擎初始化（真实 Tesseract，浏览器首次需下载中文训练数据）
-  setOcrStage(2);
-  $('#ocrStageText').textContent = '阶段 2/5 · 初始化 OCR 引擎…';
-  logLine('🧠 加载 Tesseract.js 5 · 中文简体 (chi_sim) + 数学公式训练集', 'hl');
-  updateProg(15, 10);
-  let realText = '';
-  let tesseractOk = false;
+  // ===== 阶段1：图像增强 =====
+  setOcrStage(1);
+  $('#ocrStageText').textContent = '阶段 1/5 · 图像增强（去噪+二值化+校正）…';
+  logLine(`📥 加载试卷图像：${name}`, 'hl');
+  updateProg(5, 12);
+
+  let processedCanvas = null;
   try {
-    if(window.Tesseract){
-      const startTime = Date.now();
-      logLine('⬇️  下载中文简体训练数据（~14MB，首次使用较慢，之后走缓存）…', 'warn');
-      const ret = await window.Tesseract.recognize(src, 'chi_sim+eng', {
-        logger: m => {
-          if(m.status === 'recognizing text'){
-            const p = Math.round(m.progress*100);
-            const prog = 20 + p*0.55; // 20→75 对应识别阶段
-            updateProg(prog, 12 - Math.round((Date.now()-startTime)/2500));
-          }
-        }
-      });
-      realText = (ret && ret.data && ret.data.text) || '';
-      tesseractOk = !!realText && realText.length > 50;
-    }
+    processedCanvas = await OcrEngine.preprocess(src, getPpOpts());
+    logLine(`✅ 图像增强完成：${processedCanvas.width}×${processedCanvas.height}px`, 'ok');
+    // 显示增强后的图像
+    $('#ocrPreviewImg').style.display = 'none';
+    const pc = $('#ocrPreviewCanvas');
+    pc.width = processedCanvas.width; pc.height = processedCanvas.height;
+    pc.getContext('2d').drawImage(processedCanvas, 0, 0);
+    pc.style.display = '';
+    logLine('💡 提示：如识别效果不佳，可调整上方增强选项后点"重新识别"', 'info');
   } catch(e){
-    logLine(`⚠️ 实时 OCR 异常：${e && e.message || e}，切换为"预存标注模式"（结果不变）`, 'warn');
+    logLine(`⚠️ 图像增强失败：${e.message||e}，使用原图`, 'warn');
+  }
+  updateProg(18, 10);
+
+  // ===== 阶段2：版面分析 =====
+  setOcrStage(2);
+  $('#ocrStageText').textContent = '阶段 2/5 · 版面分析（区分题干/作答区）…';
+  logLine('🧩 版面分析：水平投影切行 + 垂直投影切块 + 颜色特征区分印刷/手写', 'hl');
+  let layout = null;
+  try {
+    layout = OcrEngine.analyzeLayout(processedCanvas || await OcrEngine.loadImage(src).then(img=>{
+      const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+      c.getContext('2d').drawImage(img,0,0); return c;
+    }));
+    const stemCnt = layout.questions.length;
+    const handCnt = layout.blocks.filter(b=>b.isHandwritten).length;
+    logLine(`✅ 版面分析：检测到 ${stemCnt} 个题干区域 + ${handCnt} 个手写区域`, 'ok');
+    // 在 canvas 上标注版面
+    drawLayoutOverlay(processedCanvas, layout);
+  } catch(e){
+    logLine(`⚠️ 版面分析异常：${e.message||e}，跳过`, 'warn');
+  }
+  updateProg(32, 8);
+
+  // ===== 阶段3：文字识别（带置信度） =====
+  setOcrStage(3);
+  $('#ocrStageText').textContent = '阶段 3/5 · 文字识别（带置信度）…';
+  logLine('🧠 调用 OCR 引擎识别题干与作答（逐词置信度评估）', 'hl');
+  updateProg(38, 8);
+
+  let ocrResult = null;
+  let realText = '';
+  try {
+    const canvasForOcr = processedCanvas || $('#ocrPreviewCanvas');
+    ocrResult = await OcrEngine.recognize(canvasForOcr, {
+      logger: m => {
+        if(m.status === 'recognizing text'){
+          const p = Math.round(m.progress*100);
+          updateProg(38 + p*0.5, 8 - Math.round(p/15));
+        }
+      }
+    });
+    realText = ocrResult.text || '';
+    const avgConf = Math.round(ocrResult.confidence || 0);
+    const lowCount = (ocrResult.words||[]).filter(w => w.confidence < 70).length;
+    logLine(`✅ 识别完成：${realText.length} 字符 · 整体置信度 ${avgConf}% · 低置信词 ${lowCount} 个`, lowCount>10?'warn':'ok');
+  } catch(e){
+    logLine(`⚠️ OCR 异常：${e.message||e}`, 'err');
   }
 
-  if(tesseractOk){
-    logLine(`✅ 实时 OCR 成功：识别字符数 ${realText.length}，耗时 ${Math.round((Date.now()-startOCRFlow._s||0)/1000)||'~6'}秒`, 'ok');
-  } else {
-    // 降级：用 examId 对应预存的题干作为 OCR 结果
+  // 降级：识别内容过少时用预存题干兜底
+  if(!realText || realText.trim().length < 30){
     const exam = EXAM_MAP[examId];
     realText = exam ? exam.questions.map(q => `${q.num}. ${q.stem}`).join('\n\n') : '';
-    logLine('ℹ️  当前使用预存题干与考点精标作为 OCR 识别结果', 'warn');
+    ocrResult = { text: realText, confidence: 0, words: [] };
+    logLine('ℹ️  识别内容不足，使用预存题干兜底（建议检查图像质量）', 'warn');
   }
+  updateProg(75, 3);
 
-  // 阶段3：文字识别 + 分题
-  setOcrStage(3);
-  $('#ocrStageText').textContent = '阶段 3/5 · 分题切割 + 题干提取…';
-  logLine('🔪 题号识别 + 分题切割算法（正则匹配 /\^\d+[\.、]/ + 题型规则）', 'hl');
-  await sleep(800);
-  updateProg(78, 5);
-  // 解析出题目数量
-  const qMatches = realText.match(/(^|\n)\s*\d{1,2}[\.、\s]/gm) || [];
-  const detectCount = Math.min(22, Math.max(8, qMatches.length || 22));
-  logLine(`✅ 识别并切分题目：共检测到 ${detectCount} 道题（${Math.round(detectCount/22*100)}% 覆盖率）`, 'ok');
-  await sleep(400);
-  // 从 OCR 文本中逐题预览
-  const snippet = realText.replace(/\s+/g,' ').slice(0, 160);
-  logLine(`📝 OCR 文本预览：「${snippet}…」`, 'info');
-
-  // 阶段4：考点匹配 + 精标
+  // ===== 阶段4：结果确认（人机协同纠错） =====
   setOcrStage(4);
-  $('#ocrStageText').textContent = '阶段 4/5 · 考点匹配 + 精标…';
-  logLine('🎯 输入至「78 精标考点知识库」进行语义向量匹配（阈值 0.72）', 'hl');
-  await sleep(600);
-  updateProg(90, 2);
+  $('#ocrStageText').textContent = '阶段 4/5 · 等待确认识别结果…';
+  logLine('📝 请核对识别结果，红色低置信度词请重点检查，可直接编辑修正', 'hl');
+
+  // 渲染带置信度高亮的结果
+  const resultEl = $('#ocrResultHTML');
+  if(ocrResult.words && ocrResult.words.length > 0){
+    resultEl.innerHTML = OcrEngine.renderConfidenceHTML(ocrResult);
+  } else {
+    resultEl.textContent = realText;
+  }
+  $('#ocrConfidenceBadge').textContent = `整体置信度 ${Math.round(ocrResult.confidence||0)}%`;
+  $('#ocrConfirm').style.display = '';
+
+  // 等待用户确认
+  const confirmedText = await waitForConfirm();
+  logLine('✅ 识别结果已确认，进入考点精标', 'ok');
+  $('#ocrConfirm').style.display = 'none';
+  updateProg(88, 2);
+
+  // ===== 阶段5：考点精标 =====
+  setOcrStage(5);
+  $('#ocrStageText').textContent = '阶段 5/5 · 考点匹配 + 精标…';
+  logLine('🎯 输入至「271 课标考点知识库」进行匹配', 'hl');
+
+  const qMatches = confirmedText.match(/(^|\n)\s*\d{1,2}[\.、\s]/gm) || [];
+  const detectCount = Math.min(22, Math.max(8, qMatches.length || 22));
+  logLine(`✅ 识别并切分题目：共检测到 ${detectCount} 道题`, 'ok');
+
+  await sleep(500);
   const exam = EXAM_MAP[examId];
   if(exam){
     const mainKps = new Set(exam.questions.slice(0,12).map(q=>q.kpId));
-    logLine(`✅ 主考点匹配：匹配到 ${mainKps.size} 个主考点 + ${exam.questions.slice(0,12).reduce((s,q)=>s+((q.relatedKpIds&&q.relatedKpIds.length)||0),0)} 个关联考点`, 'ok');
+    logLine(`✅ 主考点匹配：${mainKps.size} 个主考点 + ${exam.questions.slice(0,12).reduce((s,q)=>s+((q.relatedKpIds&&q.relatedKpIds.length)||0),0)} 个关联考点`, 'ok');
   }
-  await sleep(400);
-  logLine('🏷️  精标完成：每题 1 主考点 + ≤3 关联考点 + 难度/错误率/题型', 'ok');
-
-  // 阶段5：完成 → 自动选择这套真题并进入分析页
-  setOcrStage(5);
-  $('#ocrStageText').textContent = '阶段 5/5 · 完成！即将进入逐题分析…';
   updateProg(100, 0);
-  logLine('🎉 试卷扫描完成！已自动为你选中对应试卷，进入逐题分析页。', 'ok');
+  logLine('🎉 扫描完成！进入逐题分析页。', 'ok');
 
-  // 选中对应试卷
+  // 选中试卷并跳转
   State.selectedExamId = examId;
   State.currentQNum = 1;
   State.answers = {};
@@ -395,12 +538,12 @@ async function startOCRFlow({name, label, src, examId}){
   btn.classList.add('btn-primary');
   renderExamList();
 
-  // 1.2秒后自动跳转
   setTimeout(() => {
     modal.style.display = 'none';
     location.hash = '#/analysis';
-  }, 1200);
+  }, 800);
 
+  // ---------- 内部辅助 ----------
   function updateProg(p, eta){
     $('#ocrProgressBar').style.width = p+'%';
     $('#ocrPercent').textContent = p+'%';
@@ -414,12 +557,151 @@ async function startOCRFlow({name, label, src, examId}){
     });
   }
   function sleep(t){ return new Promise(r => setTimeout(r, t)); }
+
+  // 版面可视化：在叠加层标注题干区(绿框)和手写作答区(红框)
+  function drawLayoutOverlay(canvas, layout){
+    const lc = $('#ocrLayoutCanvas');
+    lc.width = canvas.width; lc.height = canvas.height;
+    lc.style.display = '';
+    const ctx = lc.getContext('2d');
+    ctx.clearRect(0,0,lc.width,lc.height);
+    ctx.lineWidth = 2;
+    layout.blocks.forEach(b => {
+      ctx.strokeStyle = b.isHandwritten ? 'rgba(220,38,38,0.7)' : 'rgba(16,185,129,0.7)';
+      ctx.strokeRect(b.x1, b.y1, b.x2-b.x1, b.y2-b.y1);
+    });
+    // 叠加在预览图上
+    lc.style.position = 'absolute';
+    lc.style.left = $('#ocrPreviewCanvas').offsetLeft + 'px';
+    lc.style.top = $('#ocrPreviewCanvas').offsetTop + 'px';
+  }
+
+  // 等待用户点击确认或重新识别
+  function waitForConfirm(){
+    return new Promise(resolve => {
+      const onConfirm = () => {
+        cleanup();
+        resolve(resultEl.innerText || realText);
+      };
+      const onReRun = () => {
+        logLine('🔄 重新执行识别流程…', 'hl');
+        cleanup();
+        // 重新跑整个流程
+        startOCRFlow({name, label, src, examId});
+      };
+      $('#ocrConfirmBtn').addEventListener('click', onConfirm, {once:true});
+      $('#ocrReRunBtn').addEventListener('click', onReRun, {once:true});
+      function cleanup(){
+        $('#ocrConfirmBtn').removeEventListener('click', onConfirm);
+        $('#ocrReRunBtn').removeEventListener('click', onReRun);
+      }
+    });
+  }
 }
 startOCRFlow._s = Date.now();
+
+/* ---------- 预处理按钮 & OCR 引擎配置 ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  // 应用增强并重跑识别
+  const applyBtn = $('#ppApplyBtn');
+  if(applyBtn){
+    applyBtn.addEventListener('click', () => {
+      const modal = $('#ocrModal');
+      if(modal.style.display === 'none') return;
+      const src = $('#ocrPreviewImg').src;
+      if(!src) return;
+      const label = $('#ocrFileLabel').textContent;
+      startOCRFlow({ name: label, label, src, examId: State.selectedExamId || 'exam-2025-I' });
+    });
+  }
+
+  // OCR 引擎配置
+  const cfgToggle = $('#ocrConfigToggle');
+  const cfgBody = $('#ocrConfigBody');
+  const engineSelect = $('#ocrEngineSelect');
+  const apiKeyRow = $('#ocrApiKeyRow');
+  const apiUrlRow = $('#ocrApiUrlRow');
+  const appIdRow = $('#ocrAppIdRow');
+  const saveBtn = $('#ocrSaveConfig');
+
+  if(cfgToggle){
+    cfgToggle.addEventListener('click', () => {
+      cfgBody.style.display = cfgBody.style.display === 'none' ? '' : 'none';
+    });
+  }
+
+  // 读取已保存的配置
+  const saved = JSON.parse(localStorage.getItem('ocrEngineConfig') || '{}');
+  if(saved.type){
+    engineSelect.value = saved.type;
+    $('#ocrApiKey').value = saved.apiKey || '';
+    $('#ocrApiUrl').value = saved.apiUrl || '';
+    $('#ocrAppId').value = saved.appId || '';
+    applyEngineConfig(saved);
+  }
+
+  // 切换引擎时显示对应的配置项
+  engineSelect?.addEventListener('change', () => {
+    const t = engineSelect.value;
+    const needKey = t !== 'tesseract';
+    apiKeyRow.style.display = needKey ? '' : 'none';
+    apiUrlRow.style.display = needKey ? '' : 'none';
+    appIdRow.style.display = t === 'mathpix' ? '' : 'none';
+  });
+  engineSelect?.dispatchEvent(new Event('change'));
+
+  saveBtn?.addEventListener('click', () => {
+    const cfg = {
+      type: engineSelect.value,
+      apiKey: $('#ocrApiKey').value.trim(),
+      apiUrl: $('#ocrApiUrl').value.trim(),
+      appId: $('#ocrAppId').value.trim(),
+    };
+    localStorage.setItem('ocrEngineConfig', JSON.stringify(cfg));
+    applyEngineConfig(cfg);
+    saveBtn.textContent = '✅ 已保存';
+    setTimeout(() => saveBtn.textContent = '保存配置', 1500);
+  });
+
+  function applyEngineConfig(cfg){
+    if(!window.OcrEngine) return;
+    OcrEngine.config.type = cfg.type || 'tesseract';
+    OcrEngine.config.apiKey = cfg.apiKey || '';
+    OcrEngine.config.apiUrl = cfg.apiUrl || '';
+    OcrEngine.config.appId = cfg.appId || '';
+    const statusMap = {
+      tesseract: 'Tesseract.js 5（浏览器端，免费）· 已就绪 ✅',
+      pix2text: `Pix2Text API ${cfg.apiKey ? '· 已配置' : '· 未配置Key'}`,
+      mathpix: `Mathpix API ${cfg.apiKey ? '· 已配置' : '· 未配置Key'}`,
+      baidu: `百度OCR ${cfg.apiKey ? '· 已配置' : '· 未配置Key'}`,
+    };
+    const el = $('#ocrEngineStatus');
+    if(el) el.textContent = 'OCR 引擎：' + (statusMap[cfg.type] || statusMap.tesseract);
+  }
+
+  // LLM 判分配置
+  const savedLlm = JSON.parse(localStorage.getItem('llmConfig') || '{}');
+  if(savedLlm.baseUrl) $('#llmBaseUrl').value = savedLlm.baseUrl;
+  if(savedLlm.model) $('#llmModel').value = savedLlm.model;
+  if(savedLlm.apiKey) $('#llmApiKey').value = savedLlm.apiKey;
+
+  $('#llmSaveConfig')?.addEventListener('click', () => {
+    const cfg = {
+      baseUrl: $('#llmBaseUrl').value.trim(),
+      model: $('#llmModel').value.trim(),
+      apiKey: $('#llmApiKey').value.trim(),
+    };
+    localStorage.setItem('llmConfig', JSON.stringify(cfg));
+    const btn = $('#llmSaveConfig');
+    btn.textContent = '✅ 已保存';
+    setTimeout(() => btn.textContent = '保存 LLM 配置', 1500);
+  });
+});
 
 /* ---------- 3. 逐题分析页 ---------- */
 function initAnalysisPage(){
   const exam = EXAM_MAP[State.selectedExamId];
+  if(!exam){ console.warn('未找到试卷数据:', State.selectedExamId); return; }
   // 尝试恢复上次做题进度
   (async () => {
     const saved = await window.Storage?.getProgress(State.selectedExamId);
@@ -467,8 +749,10 @@ function renderQGrid(){
 }
 function renderQDetail(){
   const exam = EXAM_MAP[State.selectedExamId];
+  if(!exam){ console.warn('未找到试卷:', State.selectedExamId); return; }
   const q = exam.questions.find(x => x.num === State.currentQNum);
-  const kp = KP_MAP[q.kpId];
+  if(!q){ console.warn('未找到题目:', State.currentQNum); return; }
+  const kp = KP_MAP[q.kpId] || { id:q.kpId, name:'未匹配考点', themeName:'', moduleName:'', moduleId:'', weightScore:0, freqLevel:3, diffLevel:3 };
   const a = State.answers[q.num];
   // 选项/作答区按类型
   let answerArea = '';
@@ -517,6 +801,11 @@ function renderQDetail(){
         <button class="btn btn-ghost btn-sm mark-btn" data-num="${q.num}" data-correct="0.5">🟡 部分正确（得一半分）</button>
         <button class="btn btn-ghost btn-sm mark-btn" data-num="${q.num}" data-correct="0">❌ 没做出来/错误</button>
       </div>
+      <div style="width:100%;margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0">
+        <button class="btn btn-outline btn-sm ai-grade-btn" data-num="${q.num}">📸 AI 拍照判分（上传学生作答图片）</button>
+        <input type="file" class="ai-grade-input" data-num="${q.num}" accept="image/*" style="display:none">
+        <span class="ai-grade-hint">需先配置 LLM API（调用 VEHME/通用大模型判分，支持分步评分+错误定位）</span>
+      </div>
     </div>`;
   }
 
@@ -550,6 +839,7 @@ function renderQDetail(){
         <span class="research-badge" title="资深教研团队审校">✓ 教研团队审校</span>
         <span class="kp-tag" title="对应考点路径">${kp.name}</span>
         <span class="kp-path">路径：${kp.themeName} → ${kp.moduleName} → ID ${kp.id}</span>
+        ${renderKpDefinition(kp.name)}
       </div>
       <div class="analysis-grid">
         <div class="analysis-body">
@@ -583,6 +873,7 @@ function renderQDetail(){
                   <span class="variant-label">变式${v.id.slice(-1)}</span>${v.stem.replace(/【变式\d·.*?】/,'')}
                 </div>
               `).join('')}
+              ${renderK12Exercises(kp.name)}
             </div>
           </div>
         </div>
@@ -656,6 +947,24 @@ function renderQDetail(){
     renderQDetail(); renderQGrid(); updateProgressStats(); checkAllDone();
   }));
 
+  // AI 拍照判分（解答题）
+  $$('.ai-grade-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const num = parseInt(btn.dataset.num);
+      const input = $(`.ai-grade-input[data-num="${num}"]`);
+      input?.click();
+    });
+  });
+  $$('.ai-grade-input').forEach(input => {
+    input.addEventListener('change', async () => {
+      const num = parseInt(input.dataset.num);
+      const file = input.files[0];
+      if(!file) return;
+      const qq = exam.questions.find(x=>x.num===num);
+      await gradeStudentAnswer(qq, file);
+    });
+  });
+
   // 进度条
   $('#qNavBar').style.width = (State.currentQNum / exam.totalQuestions *100)+'%';
 }
@@ -680,6 +989,98 @@ function goToReport(){
   // 计算报告数据
   State.currentReport = computeReport();
   location.hash = '#/report';
+}
+
+/* ---------- 漏洞追溯：沿先修链回溯底层薄弱点 ---------- */
+// 用考点名在知识树中模糊搜索最相关的知识点
+function findKpByName(examPointName){
+  if(!window.KNOWLEDGE_TREE) return null;
+  const name = examPointName.replace(/[（(].*?[）)]/g,'').replace(/[，。、\s/]+/g,'');
+  let best=null, bestScore=0;
+  for(const tp of window.KNOWLEDGE_TREE){
+    if(!tp.isHigh) continue;
+    const tname = tp.name;
+    // 计算字符重叠度
+    const setA = new Set(name), setB = new Set(tname);
+    let overlap=0;
+    for(const ch of setA) if(setB.has(ch)) overlap++;
+    const score = overlap / Math.max(setA.size, setB.size);
+    if(score > bestScore){ bestScore=score; best=tp; }
+  }
+  return bestScore >= 0.3 ? best : null;
+}
+
+// 沿硬先修链递归回溯，返回追溯链数组（从当前到最底层）
+function tracePrerequisites(kpId){
+  if(!window.KNOWLEDGE_DEPS || !window.KNOWLEDGE_TREE) return [];
+  const kpMap = {};
+  window.KNOWLEDGE_TREE.forEach(t => kpMap[t.id]=t);
+  const chain = [];
+  const visited = new Set();
+  function dfs(id, depth){
+    if(visited.has(id) || depth > 8) return; // 防循环+限深
+    visited.add(id);
+    const tp = kpMap[id];
+    if(tp) chain.push({...tp, depth});
+    // 找硬先修
+    const hardPres = window.KNOWLEDGE_DEPS
+      .filter(d => d.t===id && d.s==='hard')
+      .map(d => d.p);
+    for(const p of hardPres) dfs(p, depth+1);
+  }
+  dfs(kpId, 0);
+  return chain;
+}
+
+// 渲染K12教材习题
+function renderK12Exercises(examPointName){
+  const kp = findKpByName(examPointName);
+  if(!kp || !kp.k12_exercises || !kp.k12_exercises.length) return '';
+  return kp.k12_exercises.map((ex,i)=>`
+    <div class="variant-item k12-ex">
+      <span class="variant-label k12-label">教材题${i+1}</span>${ex.stem}
+      <div class="k12-ex-answer" style="display:none"><b>答案：</b>${ex.answer}${ex.analysis?`<br><b>解析：</b>${ex.analysis}`:''}</div>
+    </div>
+  `).join('');
+}
+
+// 生成考点的教材定义原文+公式+章节定位 HTML
+function renderKpDefinition(examPointName){
+  const kp = findKpByName(examPointName);
+  if(!kp) return '';
+  const def = kp.definition || kp.desc || '';
+  const formula = kp.formula || '';
+  const chapter = kp.chapter || '';
+  const importance = kp.importance || '';
+  if(!def && !formula && !chapter) return '';
+  let html = '<div class="kp-definition">';
+  if(chapter) html += `<div class="kp-chapter">📖 教材定位：${chapter}</div>`;
+  if(importance) html += `<span class="kp-importance">${importance}</span>`;
+  if(def) html += `<div class="kp-def-text">${def}</div>`;
+  if(formula) html += `<div class="kp-formula">📐 ${formula}</div>`;
+  if(kp.skills && kp.skills.length){
+    html += '<div class="kp-skills"><span class="kp-skills-title">🛠️ 解题技能：</span>';
+    html += kp.skills.map(s => `<span class="kp-skill-tag" title="${s.desc||''}">${s.name}</span>`).join('');
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// 生成追溯链的 HTML（标记跨学段底层盲区）
+function renderTraceChain(examPointName){
+  const start = findKpByName(examPointName);
+  if(!start) return '';
+  const chain = tracePrerequisites(start.id);
+  if(chain.length <= 1) return '';
+  const items = chain.map((c,i) => {
+    const isRoot = c.grade < 10; // 跨学段=底层盲区
+    const icon = isRoot ? '🔴' : '⬆️';
+    const stage = c.grade >= 10 ? `高${c.grade-9}` : (c.grade>=7?`初${c.grade-6}`:`小${c.grade}`);
+    const tag = isRoot ? '<span class="trace-root">底层盲区</span>' : `<span class="trace-stage">${stage}</span>`;
+    return `<div class="trace-item">${icon} <b>${c.name}</b> ${tag}</div>`;
+  }).join('<div class="trace-arrow">↓</div>');
+  return `<div class="vuln-trace"><div class="vuln-trace-title">🔗 漏洞追溯链（从当前考点回溯到底层薄弱点）</div>${items}</div>`;
 }
 
 /* ---------- 4. 报告页（核心算法）---------- */
@@ -757,7 +1158,7 @@ function computeReport(){
     return { id:tid, name:tName, score:Math.round(ts), total:ts2, percent };
   });
 
-  // 4.5 掌握度矩阵：15模块 × 考点（取每模块前 6 个核心考点展示）
+  // 4.5 掌握度矩阵：22模块 × 考点（取每模块前 6 个核心考点展示）
   const moduleList = [...new Set(window.KNOWLEDGE_POINTS.map(kp => kp.moduleId))].sort();
   const matrix = moduleList.map(mid => {
     const mKps = window.KNOWLEDGE_POINTS.filter(kp => kp.moduleId === mid).slice(0,6);
@@ -872,6 +1273,7 @@ function renderReport(){
         <div><div class="vuln-stat-num">${Math.round(v.lostScore)}</div><div class="vuln-stat-label">丢失分数</div></div>
         <div><div class="vuln-stat-num">${v.errorRate}%</div><div class="vuln-stat-label">错误率</div></div>
       </div>
+      ${renderTraceChain(v.kp.name)}
     </div>`;
   }).join('');
   // 矩阵
@@ -892,6 +1294,20 @@ function renderReport(){
     btn.classList.add('btn-white');
     setTimeout(()=>location.hash = '#/my', 900);
   };
+  // 视图切换：老师技术视图 / 家长版解读
+  const tabTech = $('#tabTech'), tabParent = $('#tabParent');
+  const techView = $('#techView'), parentView = $('#parentView');
+  function switchReportView(v){
+    const isTech = v === 'tech';
+    techView.style.display = isTech ? '' : 'none';
+    parentView.style.display = isTech ? 'none' : '';
+    tabTech.classList.toggle('active', isTech);
+    tabParent.classList.toggle('active', !isTech);
+  }
+  tabTech.onclick = () => switchReportView('tech');
+  tabParent.onclick = () => switchReportView('parent');
+  switchReportView('tech');
+  renderParentView(R);
 }
 function animNum(el, to, dur=500){
   const from = 0, start = performance.now();
@@ -901,6 +1317,225 @@ function animNum(el, to, dur=500){
     if(p<1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
+}
+
+/* ---------- 续费证据链：对比历史报告 ---------- */
+function computeRenewalChain(R){
+  const history = loadReports();
+  const others = history.filter(h => h && h.id !== R.id);
+  const chain = {
+    type: 'baseline',
+    firstDate: R.date, curDate: R.date,
+    firstScore: R.score, curScore: R.score,
+    firstLost: R.lost, curLost: R.lost,
+    firstVulnCount: (R.vulnList||[]).length, curVulnCount: (R.vulnList||[]).length,
+    fixedScore: 0, fixRate: 0, remainScore: Math.round(R.lost*0.7), delta: 0
+  };
+  if(others.length){
+    const first = others[others.length-1]; // 最早一份 = 入学基线
+    if(first){
+      const firstLost = first.lost != null ? first.lost : (first.totalScore ? first.totalScore - first.score : R.lost);
+      const curLost = R.lost;
+      const fixedScore = Math.max(0, firstLost - curLost);
+      chain.type = 'compare';
+      chain.firstDate = first.date || '—';
+      chain.curDate = R.date || '—';
+      chain.firstScore = first.score;
+      chain.curScore = R.score;
+      chain.firstLost = firstLost;
+      chain.curLost = curLost;
+      chain.fixedScore = fixedScore;
+      chain.fixRate = firstLost > 0 ? Math.round(fixedScore/firstLost*100) : 0;
+      chain.remainScore = Math.round(curLost*0.7);
+      chain.delta = R.score - first.score;
+      chain.firstVulnCount = (first.vulnList||[]).length;
+      chain.curVulnCount = (R.vulnList||[]).length;
+    }
+  }
+  return chain;
+}
+
+/* ---------- 家长版解读视图 ---------- */
+function renderParentView(R){
+  const pct = R.totalScore ? Math.round(R.score/R.totalScore*100) : 0;
+  const chain = computeRenewalChain(R);
+  const conclusion = pct>=85 ? '数学基础扎实，成绩稳定，保持当前节奏即可。'
+    : pct>=70 ? '数学处于中上水平，存在若干明确漏洞，针对性补强可再上一档。'
+    : pct>=50 ? '数学中等，存在系统性知识漏洞，建议按优先级系统补强。'
+    : '数学基础偏弱，存在多处底层漏洞，建议从基础考点逐层补齐。';
+
+  const vulnHtml = (R.vulnList||[]).map((v,i)=>{
+    const lvl = v.mastery>=60?'掌握尚可':(v.mastery>=40?'掌握偏弱':'明显薄弱');
+    return `
+    <div class="parent-vuln">
+      <span class="parent-vuln-num">${i+1}</span>
+      <div class="parent-vuln-body">
+        <div class="parent-vuln-name">${v.kp.name}</div>
+        <div class="parent-vuln-desc">掌握度 ${v.mastery}%（${lvl}），本次约丢 ${Math.round(v.lostScore)} 分</div>
+      </div>
+      <span class="parent-vuln-gain">补上约 +${Math.round(v.lostScore*0.7)} 分</span>
+    </div>`;
+  }).join('');
+
+  let chainHtml;
+  if(chain.type==='baseline'){
+    chainHtml = `
+    <div class="renewal-chain baseline">
+      <div class="renewal-title">📈 学习证据链 · 首次建立基线</div>
+      <p>这是孩子的首次系统测评，已记录当前学习基线（${chain.curVulnCount} 个核心漏洞、约丢 ${chain.curLost} 分）。下次测评将自动对比，呈现修复效果与提分证据，让每次进步看得见。</p>
+    </div>`;
+  } else {
+    const up = chain.delta;
+    const arrow = up>=0 ? '提升' : '回落';
+    const arrowCls = up>=0 ? 'good' : 'bad';
+    chainHtml = `
+    <div class="renewal-chain">
+      <div class="renewal-title">📈 学习证据链 · 续费有据可依</div>
+      <div class="renewal-timeline">
+        <div class="renewal-node">
+          <div class="renewal-node-date">入学测评<br>${chain.firstDate}</div>
+          <div class="renewal-node-val">得分 ${chain.firstScore} 分<br>漏洞 ${chain.firstVulnCount} 个</div>
+        </div>
+        <div class="renewal-arrow">→</div>
+        <div class="renewal-node">
+          <div class="renewal-node-date">本次测评<br>${chain.curDate}</div>
+          <div class="renewal-node-val">得分 ${chain.curScore} 分<br>漏洞 ${chain.curVulnCount} 个</div>
+        </div>
+      </div>
+      <div class="renewal-metrics">
+        <div class="renewal-metric"><div class="num">${chain.fixedScore}</div><div class="lbl">已修复丢分</div></div>
+        <div class="renewal-metric"><div class="num">${chain.fixRate}%</div><div class="lbl">漏洞修复率</div></div>
+        <div class="renewal-metric"><div class="num ${arrowCls}">${up>=0?'+':''}${up}</div><div class="lbl">${arrow}分数</div></div>
+        <div class="renewal-metric"><div class="num good">+${chain.remainScore}</div><div class="lbl">预计再提分</div></div>
+      </div>
+    </div>`;
+  }
+
+  const speech = `【${R.examName} · 数学测评报告】
+${conclusion}
+本次得分 ${R.score} 分（百分制 ${pct} 分），正确率 ${R.rate}%。
+主要薄弱点：${(R.vulnList||[]).map((v,i)=>`${i+1}.${v.kp.name}`).join('；')||'无显著薄弱点'}。
+接下来将针对性训练这些考点，预计可再提分 ${Math.round(R.lost*0.7)} 分。有任何问题欢迎随时沟通。`;
+
+  $('#parentView').innerHTML = `
+    <div class="parent-hero card">
+      <div class="parent-conclusion">${conclusion}</div>
+      <div class="parent-stats">
+        <div class="parent-stat"><div class="num">${R.score}</div><div class="lbl">得分（满分${R.totalScore}）</div></div>
+        <div class="parent-stat"><div class="num">${pct}</div><div class="lbl">百分制</div></div>
+        <div class="parent-stat"><div class="num">${(R.vulnList||[]).length}</div><div class="lbl">核心漏洞</div></div>
+        <div class="parent-stat"><div class="num good">+${Math.round(R.lost*0.7)}</div><div class="lbl">预计可提分</div></div>
+      </div>
+    </div>
+
+    <div class="parent-section card">
+      <div class="parent-section-title">🔍 薄弱知识点（家长版解读）</div>
+      <div class="parent-vuln-list">${vulnHtml || '<p style="color:var(--ink-soft)">本次无显著漏洞，基础扎实。</p>'}</div>
+    </div>
+
+    ${chainHtml}
+
+    <div class="parent-section card">
+      <div class="parent-section-title">💬 教师沟通话术（一键复制发给家长）</div>
+      <textarea class="parent-speech" id="parentSpeech" readonly>${speech}</textarea>
+      <button class="btn btn-primary btn-sm" id="copySpeechBtn">📋 复制话术</button>
+    </div>
+  `;
+
+  $('#copySpeechBtn').onclick = () => {
+    const ta = $('#parentSpeech');
+    if(navigator.clipboard){ navigator.clipboard.writeText(ta.value).catch(()=>{}); }
+    else { ta.select(); try{ document.execCommand('copy'); }catch(e){} }
+    const btn = $('#copySpeechBtn');
+    btn.textContent = '✓ 已复制';
+    setTimeout(()=>{ if(btn) btn.textContent = '📋 复制话术'; }, 1500);
+  };
+}
+
+/* ---------- 招商页 ---------- */
+const BIZ_SUBJECTS = {
+  math: {
+    icon:'📐', name:'数学', status:'已上线',
+    title:'真题漏洞扫描 · 高考数学',
+    desc:'271 个课标考点 · AI 批改 · 漏洞追溯到初中基础',
+    tags:['智能批改','漏洞扫描','续费报告'],
+    points:['271 个课标考点 + 人教版教材定义与公式','跨学段漏洞追溯：高中做错，一路追到初中盲区','家长版报告 + 续费证据链，续费有据可依','1084 道变式题 + 人教版教材习题'],
+  },
+  phys: {
+    icon:'⚛️', name:'物理', status:'规划中',
+    title:'物理漏洞扫描 · 同款架构',
+    desc:'力学 / 电磁学专题漏洞定位 · 实验题错误溯源',
+    tags:['物理建模','图像题','实验溯源'],
+    points:['力学、电磁学、热学三大模块考点','图像题 / 实验题的错误模式定位','与数学同款家长版报告与续费证据链'],
+  },
+  chem: {
+    icon:'🧪', name:'化学', status:'规划中',
+    title:'化学错因诊断 · 同款架构',
+    desc:'化学方程式 / 有机推断 / 实验探究',
+    tags:['方程式','有机推断','实验探究'],
+    points:['化学方程式书写与化学计算错因定位','有机推断的断键 / 成键逻辑溯源','与数学同款续费证据链'],
+  },
+  eng: {
+    icon:'🔤', name:'英语', status:'规划中',
+    title:'英语题型漏洞定位 · 同款架构',
+    desc:'语法填空 / 阅读理解 / 写作',
+    tags:['语法','阅读','写作'],
+    points:['语法填空考点分类与错误定位','阅读题型（主旨 / 细节 / 推断）弱项识别','与数学同款家长版报告'],
+  },
+};
+const BIZ_SCRIPTS = [
+  { icon:'🔍', tag:'漏洞诊断话术', title:'入学测评 · 找问题',
+    text:'XX家长您好，这是孩子本次数学测评报告：得分 108 分（百分制 72 分），主要薄弱点有 8 个，其中「导数研究单调性」全班约 80% 的同学已掌握，孩子掌握度仅 32%，这是下一步提分的关键。我们已针对性安排变式题训练，预计两周可补上约 8 分。' },
+  { icon:'📈', tag:'进步反馈话术', title:'阶段进步 · 给信心',
+    text:'XX家长您好，好消息：这两周孩子修复了 3 个漏洞（导数基础、三角函数最值、等比数列），阶段得分从 96 提升到 108，预计提分 12 分。这是进度对比报告，进步肉眼可见。接下来还剩 5 个漏洞，我们继续针对性突破。' },
+  { icon:'🎯', tag:'续费动员话术', title:'续费沟通 · 给依据',
+    text:'XX家长您好，孩子本期已修复 3 个核心漏洞（提分约 12 分）。目前还剩 5 个未修复漏洞，预计可再提 22 分。建议续一期针对性突破，把剩余漏洞集中解决，冲击下一档分数。这是漏洞清单和提分预估，供您参考。' },
+];
+function renderBizPage(){
+  const tabs = $$('#bizSubjectTabs .biz-subject-tab');
+  const panel = $('#bizSubjectPanel');
+  function renderSubject(key){
+    const s = BIZ_SUBJECTS[key];
+    if(!s) return;
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.subject === key));
+    panel.innerHTML = `
+      <div class="biz-subject-head">
+        <div class="biz-subject-name">${s.icon} ${s.name} <span class="${s.status==='已上线'?'biz-live':'biz-plan'}">${s.status}</span></div>
+        <div class="biz-subject-title">${s.title}</div>
+        <div class="biz-subject-desc">${s.desc}</div>
+      </div>
+      <div class="biz-subject-tags">${s.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+      <ul class="biz-subject-points">${s.points.map(p=>`<li>${p}</li>`).join('')}</ul>
+    `;
+  }
+  tabs.forEach(t => t.onclick = () => renderSubject(t.dataset.subject));
+  renderSubject('math');
+
+  // 报告三角色视角切换
+  $$('#bizRoleTabs .biz-role-tab').forEach(t => {
+    t.onclick = () => {
+      $$('#bizRoleTabs .biz-role-tab').forEach(x => x.classList.toggle('active', x === t));
+      $$('.biz-role-panel').forEach(p => p.classList.toggle('active', p.dataset.role === t.dataset.role));
+    };
+  });
+
+  const scriptsEl = $('#bizScripts');
+  scriptsEl.innerHTML = BIZ_SCRIPTS.map((s,i)=>`
+    <div class="biz-script card">
+      <div class="biz-script-tag">${s.icon} ${s.tag}</div>
+      <div class="biz-script-title">${s.title}</div>
+      <div class="biz-script-text">${s.text}</div>
+      <button class="btn btn-outline btn-sm biz-copy" data-script="${i}">📋 复制话术</button>
+    </div>
+  `).join('');
+  scriptsEl.querySelectorAll('.biz-copy').forEach(b => {
+    b.onclick = () => {
+      const t = BIZ_SCRIPTS[+b.dataset.script].text;
+      if(navigator.clipboard){ navigator.clipboard.writeText(t).catch(()=>{}); }
+      b.textContent = '✓ 已复制';
+      setTimeout(()=>{ if(b) b.textContent = '📋 复制话术'; }, 1500);
+    };
+  });
 }
 
 /* ---------- SVG雷达图渲染 ---------- */
@@ -1391,7 +2026,7 @@ function initKbankPage(){
   if(memberBadge && !memberBadge._bound){
     memberBadge._bound = true;
     memberBadge.addEventListener('click', () => {
-      alert('会员系统开发中…\n\n免费版权益：\n• 每月 1 次真题漏洞扫描\n• 3 个基础考点套题体验\n• 历史报告保存（最多 5 份）\n\n会员版权益：\n• 无限次扫描 + 全部 78 套考点\n• 视频讲解 + 错题本导出\n\n敬请期待！');
+      alert('会员系统开发中…\n\n免费版权益：\n• 每月 1 次真题漏洞扫描\n• 3 个基础考点套题体验\n• 历史报告保存（最多 5 份）\n\n会员版权益：\n• 无限次扫描 + 全部 271 套考点\n• 视频讲解 + 错题本导出\n\n敬请期待！');
     });
   }
   // 绑定 Tab 切换
@@ -1430,7 +2065,7 @@ function initKbankPage(){
       return !r || r.correctCount < 3;
     });
     if(next){ startKpQuiz(next.id); }
-    else { alert('🎉 你已通关全部 78 个考点！太厉害了！'); State.kbank.view='grid'; renderKbankView(); }
+    else { alert('🎉 你已通关全部 271 个考点！太厉害了！'); State.kbank.view='grid'; renderKbankView(); }
   };
 }
 function renderKbankView(){
@@ -1450,7 +2085,7 @@ function renderKbankView(){
   if(State.kbank.view==='report') renderKbankReport();
 }
 
-/* ---------- KB 1. 网格视图：15模块分组 + 考点卡片 ---------- */
+/* ---------- KB 1. 网格视图：22模块分组 + 考点卡片 ---------- */
 function getSortedKps(){
   let list = window.KNOWLEDGE_POINTS.slice();
   if(State.kbank.themeFilter !== 'all'){
